@@ -1,0 +1,4 @@
+﻿interface OutPutInterface
+{
+    void OutPutPPM();
+}
