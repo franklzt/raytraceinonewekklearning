@@ -1,6 +1,6 @@
 ﻿namespace Chapter1
 {
-    public class Chapter1OutPut : OutPutInterface
+    public class ChapterOutPut : OutPutInterface
     {
         public void OutPutPPM()
         {

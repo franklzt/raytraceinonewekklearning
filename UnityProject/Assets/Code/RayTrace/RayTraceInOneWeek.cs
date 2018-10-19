@@ -3,6 +3,7 @@
 [ExecuteInEditMode]
 public class RayTraceInOneWeek : MonoBehaviour
 {
+     
     public bool excute = false;
     private void Update()
     {
@@ -14,11 +15,17 @@ public class RayTraceInOneWeek : MonoBehaviour
     }
     void OutputFiles()
     {
-        OutPutInterface chapter1 = new Chapter1.Chapter1OutPut();
-        chapter1.OutPutPPM();
-        chapter1 = new Chapter2.Chapter2OutPut();
-        chapter1.OutPutPPM();
+        RunOutput(new Chapter1.ChapterOutPut());
+        RunOutput(new Chapter2.ChapterOutPut());
+        RunOutput(new Chapter3.ChapterOutPut());
     }
+
+    void RunOutput(OutPutInterface runer)
+    {
+        runer.OutPutPPM();
+    }
+
+
 
 }
 

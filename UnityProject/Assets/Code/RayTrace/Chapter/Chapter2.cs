@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 namespace Chapter2
 {
-    public class Chapter2OutPut : OutPutInterface
+    public class ChapterOutPut : OutPutInterface
     {
         public void OutPutPPM()
         {

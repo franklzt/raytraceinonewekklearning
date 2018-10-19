@@ -1,6 +1,6 @@
 ﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
-Shader "Shadertoy/ShaderRayTraceInOneWeek" {
+Shader "ShaderRayTraceInOneWeek/Chapter4" {
 	Properties{
 		iMouse("Mouse Pos", Vector) = (100, 100, 0, 0)
 		iChannel0("iChannel0", 2D) = "white" {}
@@ -30,6 +30,12 @@ Shader "Shadertoy/ShaderRayTraceInOneWeek" {
 #define halfpi (pi * 0.5)
 #define oneoverpi (1.0 / pi)
 
+#define LOWER_LEFT_CORNER vec3(-2.0f, -1.0f, -1.0f)
+#define	HORIZONTAL  vec3(4.0f, 0.0f, 0.0f)
+#define	VERTICAL   vec3(0.0f, 2.0f, 0.0f)
+#define START_POINT vec3(0.0f, 2.0f, 0.0f)
+
+
 			fixed4 iMouse;
 		sampler2D iChannel0;
 		fixed4 iChannelResolution0;
@@ -46,6 +52,33 @@ Shader "Shadertoy/ShaderRayTraceInOneWeek" {
 			return o;
 		}
 
+	
+
+		float hit_sphere(vec3 center, float raduis, vec3 original, vec3 direction)
+		{
+			vec3 oc = original - center;
+			float a = dot(direction, direction);
+			float b = 2.0 * dot(oc, direction);
+			float c = dot(oc, oc) - raduis * raduis;
+			float discriminant = b * b - 4.0 * a * c;
+			return discriminant;
+		}
+
+
+		vec3 get_color(vec3 original, vec3 direction)
+		{
+
+			vec3 hited_color = vec3(1.0, 0.0, 0.0);
+
+			vec3 unit_v = normalize(direction);
+			float t = 0.5 * (unit_v.y + 1.0);
+			vec3 unhit_color = (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+
+			float hit = hit_sphere(vec3(0.0, 0.0, -1.0), 0.5, original, direction);				
+			return smoothstep(unhit_color, hited_color, hit);
+		}
+
+
 		vec4 main(vec2 fragCoord);
 
 		fixed4 frag(v2f _iParam) : COLOR0
@@ -58,7 +91,12 @@ Shader "Shadertoy/ShaderRayTraceInOneWeek" {
 		vec4 main(vec2 fragCoord)
 		{
 			vec2 st = fragCoord;
-			return vec4(st.x, st.y, 0.2, 1);
+			float u = st.x;
+			float v = st.y;
+			
+			vec3 dir = LOWER_LEFT_CORNER + u * HORIZONTAL + v * VERTICAL;
+			vec3 col = get_color(START_POINT, dir);
+			return vec4(col, 1.0);
 		}
 
 		
