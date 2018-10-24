@@ -1,100 +1,72 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+﻿Shader "ShaderRayTraceInOneWeek/Chapter4" {
+	SubShader{
+	 Pass {
+		CGPROGRAM
 
-Shader "ShaderRayTraceInOneWeek/Chapter3" {
-	Properties{
-		iMouse("Mouse Pos", Vector) = (100, 100, 0, 0)
-		iChannel0("iChannel0", 2D) = "white" {}
-		iChannelResolution0("iChannelResolution0", Vector) = (100, 100, 0, 0)
-	}
+		#pragma vertex vert  
+		#pragma fragment frag 
+		#include "UnityCG.cginc"
 
-		CGINCLUDE
-#include "UnityCG.cginc"   
-#pragma target 3.0      
-
-#define vec2 float2
-#define vec3 float3
-#define vec4 float4
-#define mat2 float2x2
-#define mat3 float3x3
-#define mat4 float4x4
-#define iGlobalTime _Time.y
-#define mod fmod
-#define mix lerp
-#define fract frac
-#define texture2D tex2D
-#define iResolution _ScreenParams
-#define gl_FragCoord ((_iParam.scrPos.xy/_iParam.scrPos.w) * _ScreenParams.xy)
-
-#define PI2 6.28318530718
-#define pi 3.14159265358979
-#define halfpi (pi * 0.5)
-#define oneoverpi (1.0 / pi)
-
-#define LOWER_LEFT_CORNER vec3(-2.0f, -1.0f, -1.0f)
-#define	HORIZONTAL  vec3(4.0f, 0.0f, 0.0f)
-#define	VERTICAL   vec3(0.0f, 2.0f, 0.0f)
-#define START_POINT vec3(0.0f, 2.0f, 0.0f)
-
-
-			fixed4 iMouse;
-		sampler2D iChannel0;
-		fixed4 iChannelResolution0;
-
-		struct v2f {
-			float4 pos : SV_POSITION;
-			float4 scrPos : TEXCOORD0;
+		struct vertexOutput {
+		   float4 pos : SV_POSITION;
+		   float4 col : TEXCOORD0;
 		};
 
-		v2f vert(appdata_base v) {
-			v2f o;
-			o.pos = UnityObjectToClipPos(v.vertex);
-			o.scrPos = ComputeScreenPos(o.pos);
-			return o;
-		}
-
-
-		vec3 get_color(vec3 original, vec3 direction)
+		vertexOutput vert(appdata_full input)
 		{
-			vec3 unit_v = normalize(direction);
-			float t = 0.5 * (unit_v.y + 1.0);
-			return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+			vertexOutput output;
+			output.pos = UnityObjectToClipPos(input.vertex);
+			output.col = input.texcoord;
+			return output;
 		}
 
-
-		vec4 main(vec2 fragCoord);
-
-		fixed4 frag(v2f _iParam) : COLOR0
-		{
-			vec2 fragCoord = gl_FragCoord;
-			float2 viewPortCoor = float2(fragCoord.x / iResolution.x, fragCoord.y / iResolution.y);// (0,0) - (1,1) 中心位置为(0.5,0.5)
-			return main(viewPortCoor);
-		}
-
-		vec4 main(vec2 fragCoord)
-		{
-			vec2 st = fragCoord;
-			float u = st.x;
-			float v = st.y;
-			vec3 dir = LOWER_LEFT_CORNER + u * HORIZONTAL + v * VERTICAL;
-			vec3 col = get_color(START_POINT, dir);
-			return vec4(col, 1.0);
-		}
-
-		
+		///////////////////////////////////////////////////////////////////////////////////
+				struct rayOutput {
+					float3 origin;
+					float3 direction;
+				};
 
 
-		ENDCG
-
-			SubShader{
-				Pass {
-					CGPROGRAM
-
-					#pragma vertex vert    
-					#pragma fragment frag    
-					#pragma fragmentoption ARB_precision_hint_fastest     
-
-					ENDCG
+				rayOutput ray_create(float3 a, float3 b)
+				{
+					rayOutput output;
+					output.origin = a;
+					output.direction = b;
+					return output;
 				}
-		}
-			FallBack Off
+
+				float3 ray_point_at_parameter(float t, rayOutput r)
+				{
+					return r.origin + r.direction * t;
+				}
+
+				float3 ray_color(rayOutput r)
+				{
+					float3 unit_vector = normalize(r.direction);
+					float t = 0.5 * (unit_vector.y + 1.0);
+					return (1.0 - t) * float3(1.0, 1.0, 1.0) + t * float3(0.5, 0.7, 1.0);
+				}
+
+				///////////////////////////////////////////////////////////////////////////////////
+
+
+						float4 frag(vertexOutput input) : COLOR
+						{
+							float3 lower_left = float3(-2.0,-1.0,-1.0);
+							float3 horizontal = float3(4.0, 0.0, 0.0);
+							float3 vertical = float3(0.0, 2.0, 0.0);
+							float3 original = float3(0.0, 0.0, 0.0);
+
+							float2 uv = input.col.xy;
+
+							rayOutput r = ray_create(original, lower_left + uv.x * horizontal + vertical * uv.y);
+							float3 rayoutput = ray_color(r);
+
+							float4 color = float4(rayoutput,1.0);
+						   return color;
+						}
+
+						ENDCG
+					 }
+	}
 }
