@@ -49,10 +49,13 @@
 			return discriminant > 0.0;
 		}
 
+		
+
+
 
 		float3 ray_color(rayOutputStruct r)
 		{
-			if (ray_hit_sphere(float3(0.0, 0.0, -1), 0.5, r))
+			if (ray_hit_sphere(float3(0.0, 0.0, -1.0), 0.5, r))
 			{
 				return float3(1.0,0.0,0.0);
 			}
@@ -61,8 +64,6 @@
 			float t = 0.5 * (unit_vector.y + 1.0);
 			return (1.0 - t) * float3(1.0, 1.0, 1.0) + t * float3(0.5, 0.7, 1.0);
 		}
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -78,7 +79,6 @@
 
 			rayOutputStruct r = ray_create(original, lower_left + uv.x * horizontal + vertical * uv.y);
 			float3 rayOutputStruct = ray_color(r);
-
 			float4 color = float4(rayOutputStruct,1.0);
 		   return color;
 		}

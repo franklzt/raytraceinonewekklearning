@@ -115,9 +115,12 @@
 			float2 uv = input.col.xy;
 
 			rayOutputStruct r = ray_create(original, lower_left + uv.x * horizontal + vertical * uv.y);
-			float3 rayOutputStruct = ray_color(r);
+			float3 col_value = ray_color(r);
 
-			float4 color = float4(rayOutputStruct,1.0);
+			rayOutputStruct s[2]  = {r,r};
+
+
+			float4 color = float4(col_value,1.0);
 		   return color;
 		}
 
