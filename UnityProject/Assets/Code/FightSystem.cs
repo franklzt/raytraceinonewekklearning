@@ -13,6 +13,7 @@ public class FightSystem : MonoBehaviour
 
     public GameObject HudGoReferencce;
 
+    public bool IsAutoFight = false;
 
     Fight fight;
 
@@ -23,6 +24,7 @@ public class FightSystem : MonoBehaviour
         AttackButton.onClick.AddListener(OnPlayerAttack);
         fight = new Fight(playerModel, enemyModel);
         fight.MonoReference = this;
+        fight.AutoFight = IsAutoFight;
         fight.HudGoReferencce = HudGoReferencce;
     }
 

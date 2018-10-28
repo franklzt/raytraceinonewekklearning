@@ -742,6 +742,7 @@ MonoBehaviour:
   EnemyHp: {fileID: 1099276518}
   AttackButton: {fileID: 219066815}
   HudGoReferencce: {fileID: 264384624}
+  IsAutoFight: 0
 --- !u!1 &1626487631
 GameObject:
   m_ObjectHideFlags: 0

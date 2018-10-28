@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class Fight
 {
@@ -8,6 +9,8 @@ public class Fight
 
     public MonoBehaviour MonoReference { get; set; }
     public GameObject HudGoReferencce { get; set; }
+
+    public bool AutoFight { get; set; }
 
 
     void ToggleUserHUD(bool state)
@@ -24,60 +27,16 @@ public class Fight
 
     public void PlayerAttack()
     {
-        ToggleUserHUD(true);
         if (FightFinish())
         {
             return;
         }
-        MonoReference.StartCoroutine(MovePlayerToEnemy());
-    }
-
-    IEnumerator MovePlayerToEnemy()
-    {
-        ToggleUserHUD(false);
-        Transform playerTrans = Player.modelReference.transform;
-        Actor attackActor = Player;
-        Vector3 forword = new Vector3(1, 0, 0);
-        bool playAnim = false;
-        bool rotatePlayer = false;
-        while (true)
+        MonoReference.StartCoroutine(MovePlayerToEnemy(Player, Enemy, () =>
         {
-            if (!playAnim)
-            {
-                PlayWalkAnim(attackActor);
-                playerTrans.localPosition += forword * Time.deltaTime;
-                if (playerTrans.localPosition.x >= 1.5f)
-                {
-                    playAnim = true;
-                    PlayAttackAnim(attackActor);
-                }
-            }
-
-            if (playAnim)
-            {
-
-                if (!rotatePlayer)
-                {
-                    yield return new WaitForSeconds(GetActorAnimLength(attackActor.ActorAnimName.AttackAnim));
-                    Enemy = AttackActor(attackActor, Enemy);
-                    rotatePlayer = true;
-                    playerTrans.localEulerAngles *= -1;
-                }
-                playerTrans.localPosition -= forword * Time.deltaTime;
-                PlayWalkAnim(attackActor);
-
-                if (playerTrans.localPosition.x <= -2)
-                {
-                    playerTrans.localEulerAngles *= -1;
-                    PlayIdleAnim(attackActor);
-                    EnemyAttack();
-                    yield break;
-                }
-            }
-            yield return null;
-        }
+            Enemy = AttackActor(Player, Enemy);
+        }, EnemyAttack));
+        ToggleUserHUD(false);
     }
-
 
     public void EnemyAttack()
     {
@@ -85,24 +44,55 @@ public class Fight
         {
             return;
         }
-        MonoReference.StartCoroutine(MoveEnemyToPlayer());
+        MonoReference.StartCoroutine(MovePlayerToEnemy(Enemy, Player, () =>
+        {
+            Player = AttackActor(Enemy, Player);
+        }, () =>
+        {
+            ToggleUserHUD(true);
+            if (AutoFight)
+            {
+                PlayerAttack();
+            }
+        }));
+    }
+
+    void MoveToTarget(Transform moveObject, Vector3 from, Vector3 to, float speed = 1.0f)
+    {
+        Vector3 dir = to - from;
+        Vector3 moveDirection = dir.normalized;
+        moveObject.position += moveDirection * Time.deltaTime * speed;
     }
 
 
-    IEnumerator MoveEnemyToPlayer()
+    bool FinishMove(Transform trans, Vector3 target, float conditionDistance)
     {
-        Transform playerTrans = Enemy.modelReference.transform;
-        Actor attackActor = Enemy;
-        Vector3 forword = new Vector3(1, 0, 0);
+        Vector3 disVector = trans.position - target;
+        float distance = disVector.magnitude;
+        return distance <= conditionDistance;
+    }
+
+
+    IEnumerator MovePlayerToEnemy(Actor moveActor, Actor targetActor, UnityAction OnHitAction, UnityAction OnNextAction)
+    {
+        Actor attackActor = moveActor;
         bool playAnim = false;
         bool rotatePlayer = false;
+
+        Transform playerTrans = moveActor.modelReference.transform;
+        Transform enemyTrans = targetActor.modelReference.transform;
+
+        Vector3 originalPosition = playerTrans.position;
+        Vector3 targetPosition = enemyTrans.position;
+
         while (true)
         {
             if (!playAnim)
             {
                 PlayWalkAnim(attackActor);
-                playerTrans.localPosition -= forword * Time.deltaTime;
-                if (playerTrans.localPosition.x <= -1.5f)
+                MoveToTarget(playerTrans, originalPosition, targetPosition);
+                bool finishMove = FinishMove(playerTrans, targetPosition, 0.5f);
+                if (finishMove)
                 {
                     playAnim = true;
                     PlayAttackAnim(attackActor);
@@ -115,18 +105,27 @@ public class Fight
                 if (!rotatePlayer)
                 {
                     yield return new WaitForSeconds(GetActorAnimLength(attackActor.ActorAnimName.AttackAnim));
-                    Player = AttackActor(attackActor, Player);
+                    if (OnHitAction != null)
+                    {
+                        OnHitAction();
+                    }
                     rotatePlayer = true;
                     playerTrans.localEulerAngles *= -1;
                 }
-                playerTrans.localPosition += forword * Time.deltaTime;
+                MoveToTarget(playerTrans, playerTrans.position, originalPosition);
                 PlayWalkAnim(attackActor);
 
-                if (playerTrans.localPosition.x >= 2)
+                bool finishMove = FinishMove(playerTrans, originalPosition, 0.01f);
+                if (finishMove)
                 {
                     playerTrans.localEulerAngles *= -1;
                     PlayIdleAnim(attackActor);
-                    PlayerAttack();
+
+                    if (OnNextAction != null)
+                    {
+                        OnNextAction();
+                    }
+                    //EnemyAttack();
                     yield break;
                 }
             }
@@ -135,17 +134,12 @@ public class Fight
     }
 
 
-    void EnemyAttackPlayer()
-    {
-        Player = AttackActor(Enemy, Player);
-    }
+
 
 
 
     string[] allAnimName = { "SLIDE00", "WAIT00", "WALK00_F", "DAMAGED00" };
     float[] allAnimLength = { 1.36f, 1.0f, 1.3f, 1.133f };
-
-
     float GetActorAnimLength(string animName)
     {
         for (int i = 0; i < allAnimName.Length; i++)
@@ -179,10 +173,6 @@ public class Fight
         actor = AddAnimName(actor);
         return actor;
     }
-
-
-
-
 
     Actor AddAnim(Actor actor)
     {
@@ -224,8 +214,6 @@ public class Fight
     }
 }
 
-
-
 public struct ActorAnimName
 {
     public string AttackAnim { get; set; }
@@ -233,8 +221,6 @@ public struct ActorAnimName
     public string WalkAnim { get; set; }
     public string DamageAnim { get; set; }
 }
-
-
 
 public struct Actor
 {
